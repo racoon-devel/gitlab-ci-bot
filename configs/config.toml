@@ -1,0 +1,6 @@
+[TelegramBot]
+Token = ""
+Chat = 0
+
+[Server]
+Endpoint = "0.0.0.0:8080"

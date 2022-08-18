@@ -69,16 +69,36 @@ func (bot *Bot) loop() {
 }
 
 func (bot *Bot) sendReport(event *gitlab.PipelineEvent) {
-	pipelineUrl := fmt.Sprintf("%s/-/pipelines/%d", event.Project.WebURL, event.ObjectAttributes.ID)
-	report := fmt.Sprintf("<b>Build failed</b>\n<a href=\"%s\">#%d</a>\n\nProject: %s\nBranch: %s\nCommit: <code>%s</code>\nAuthor: %s\n",
-		pipelineUrl, event.ObjectAttributes.ID, event.Project.PathWithNamespace, event.ObjectAttributes.Ref, event.Commit.ID, event.User.Name)
+	ctx := notifyContext{
+		PipelineURL: fmt.Sprintf("%s/-/pipelines/%d", event.Project.WebURL, event.ObjectAttributes.ID),
+		PipelineID:  event.ObjectAttributes.ID,
+		Project:     event.Project.PathWithNamespace,
+		Branch:      event.ObjectAttributes.Ref,
+		Commit:      event.Commit.ID,
+		Author:      event.User.Name,
+		Reports: []struct {
+			URL      string
+			FileName string
+		}{},
+	}
+
 	for _, build := range event.Builds {
 		if build.ArtifactsFile.Filename != "" {
 			downloadUrl := fmt.Sprintf("%s/-/jobs/%d/artifacts/download?file_type=archive", event.Project.WebURL, build.ID)
-			report += fmt.Sprintf("\n<a href=\"%s\">Download %s</a>", downloadUrl, build.ArtifactsFile.Filename)
+			ctx.Reports = append(ctx.Reports, struct {
+				URL      string
+				FileName string
+			}{URL: downloadUrl, FileName: build.ArtifactsFile.Filename})
 		}
 	}
-	msg := tgbotapi.NewMessage(bot.chatID, report)
+
+	notification, err := makeNotification(&ctx)
+	if err != nil {
+		log.Printf("format notification failed: %s", err)
+		return
+	}
+
+	msg := tgbotapi.NewMessage(bot.chatID, notification)
 	msg.ParseMode = "HTML"
 	bot.api.Send(msg)
 }

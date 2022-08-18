@@ -1,0 +1,11 @@
+<b>Build failed</b>
+<a href="{{ $.PipelineURL }}">#{{ $.PipelineID }}</a>
+
+Project: {{ $.Project }}
+Branch: {{ $.Branch }}
+Commit: <code>{{ $.Commit }}</code>
+Author: {{ $.Author }}
+
+{{ range $i, $r := $.Reports }}
+<a href="{{ $r.URL }}">Download {{ $r.FileName }}</a>
+{{ end }}

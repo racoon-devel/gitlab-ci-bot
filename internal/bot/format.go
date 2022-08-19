@@ -12,13 +12,14 @@ var rawTemplate string
 var notifyTemplate *template.Template
 
 type notifyContext struct {
-	PipelineURL string
-	PipelineID  int
-	Project     string
-	Branch      string
-	Commit      string
-	Author      string
-	Reports     []struct {
+	PipelineURL   string
+	PipelineID    int
+	Project       string
+	Branch        string
+	Commit        string
+	CommitMessage string
+	Author        string
+	Reports       []struct {
 		URL      string
 		FileName string
 	}

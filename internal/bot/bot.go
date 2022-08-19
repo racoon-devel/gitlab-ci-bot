@@ -70,12 +70,13 @@ func (bot *Bot) loop() {
 
 func (bot *Bot) sendReport(event *gitlab.PipelineEvent) {
 	ctx := notifyContext{
-		PipelineURL: fmt.Sprintf("%s/-/pipelines/%d", event.Project.WebURL, event.ObjectAttributes.ID),
-		PipelineID:  event.ObjectAttributes.ID,
-		Project:     event.Project.PathWithNamespace,
-		Branch:      event.ObjectAttributes.Ref,
-		Commit:      event.Commit.ID,
-		Author:      event.User.Name,
+		PipelineURL:   fmt.Sprintf("%s/-/pipelines/%d", event.Project.WebURL, event.ObjectAttributes.ID),
+		PipelineID:    event.ObjectAttributes.ID,
+		Project:       event.Project.PathWithNamespace,
+		Branch:        event.ObjectAttributes.Ref,
+		Commit:        event.Commit.ID,
+		CommitMessage: event.Commit.Message,
+		Author:        event.User.Name,
 		Reports: []struct {
 			URL      string
 			FileName string

@@ -3,7 +3,7 @@
 
 Project: {{ $.Project }}
 Branch: {{ $.Branch }}
-Commit: <code>{{ $.Commit }}</code>
+Commit: "{{ $.CommitMessage }}" [ <code>{{ $.Commit }} ]</code>
 Author: {{ $.Author }}
 
 {{ range $i, $r := $.Reports }}

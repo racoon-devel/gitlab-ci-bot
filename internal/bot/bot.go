@@ -56,9 +56,11 @@ func (bot *Bot) loop() {
 		case event := <-bot.eventChannel:
 			switch concreteEvent := event.(type) {
 			case *gitlab.PipelineEvent:
-				log.Println("[bot] got pipeline event, notify")
-				if concreteEvent.ObjectAttributes.Status == "failed" {
-					bot.sendReport(concreteEvent)
+				nType, isAcceptable := getNotifyType(concreteEvent)
+				if isAcceptable {
+					log.Println("[bot] got pipeline event, notify")
+					bot.notify(concreteEvent, nType)
+
 				}
 			default:
 				log.Printf("[bot] got unknown event: %T", concreteEvent)
@@ -68,7 +70,23 @@ func (bot *Bot) loop() {
 
 }
 
-func (bot *Bot) sendReport(event *gitlab.PipelineEvent) {
+func getNotifyType(event *gitlab.PipelineEvent) (nType notifyType, isAcceptable bool) {
+	if event.ObjectAttributes.Status == "failed" {
+		nType = kBuildFailed
+		isAcceptable = true
+		return
+	}
+
+	if event.ObjectAttributes.Status == "success" && event.ObjectAttributes.Tag {
+		nType = kVersionReleased
+		isAcceptable = true
+		return
+	}
+
+	return
+}
+
+func (bot *Bot) notify(event *gitlab.PipelineEvent, nType notifyType) {
 	ctx := notifyContext{
 		PipelineURL:   fmt.Sprintf("%s/-/pipelines/%d", event.Project.WebURL, event.ObjectAttributes.ID),
 		PipelineID:    event.ObjectAttributes.ID,
@@ -77,6 +95,7 @@ func (bot *Bot) sendReport(event *gitlab.PipelineEvent) {
 		Commit:        event.Commit.ID,
 		CommitMessage: event.Commit.Message,
 		Author:        event.User.Name,
+		ChangelogURL:  fmt.Sprintf("%s/-/blob/%s/changelog.md", event.Project.WebURL, event.Commit.ID),
 		Reports: []struct {
 			URL      string
 			FileName string
@@ -93,7 +112,7 @@ func (bot *Bot) sendReport(event *gitlab.PipelineEvent) {
 		}
 	}
 
-	notification, err := makeNotification(&ctx)
+	notification, err := makeNotification(&ctx, nType)
 	if err != nil {
 		log.Printf("format notification failed: %s", err)
 		return

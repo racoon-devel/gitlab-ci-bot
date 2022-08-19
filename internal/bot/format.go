@@ -2,14 +2,14 @@ package bot
 
 import (
 	"bytes"
-	_ "embed"
+	"embed"
 	"text/template"
 )
 
-//go:embed templates/build_failed.txt
-var rawTemplate string
+//go:embed templates
+var templatesFS embed.FS
 
-var notifyTemplate *template.Template
+var templates *template.Template
 
 type notifyContext struct {
 	PipelineURL   string
@@ -19,18 +19,37 @@ type notifyContext struct {
 	Commit        string
 	CommitMessage string
 	Author        string
+	ChangelogURL  string
 	Reports       []struct {
 		URL      string
 		FileName string
 	}
 }
 
+type notifyType = int
+
+const (
+	kBuildFailed notifyType = iota
+	kVersionReleased
+)
+
 func init() {
-	notifyTemplate = template.Must(template.New("build_failed").Parse(rawTemplate))
+	templates = template.Must(template.ParseFS(templatesFS, "templates/*.txt"))
 }
 
-func makeNotification(ctx *notifyContext) (string, error) {
+func makeNotification(ctx *notifyContext, nType notifyType) (string, error) {
 	buf := bytes.Buffer{}
-	err := notifyTemplate.Execute(&buf, ctx)
+	tmpl := ""
+
+	switch nType {
+	case kBuildFailed:
+		tmpl = "build_failed.txt"
+	case kVersionReleased:
+		tmpl = "version_released.txt"
+	default:
+		panic("unexpected notification type")
+	}
+
+	err := templates.ExecuteTemplate(&buf, tmpl, ctx)
 	return buf.String(), err
 }

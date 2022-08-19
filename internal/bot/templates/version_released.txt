@@ -1,0 +1,9 @@
+<b>New version released!</b>
+
+Version: <b>{{ $.Branch }}</b>
+Project: {{ $.Project }}
+
+<a href="{{ $.ChangelogURL }}">Changelog</a>
+{{ range $i, $r := $.Reports }}
+<a href="{{ $r.URL }}">Download {{ $r.FileName }}</a>
+{{ end }}
